@@ -1,153 +1,69 @@
-<div align="center">
+# Pathao CX Portal — Redis-backed setup
 
-# 🚚 Pathao CX Portal
+This adds a small serverless API layer so **presets** and **hub data**
+(and the **admin password**) are stored in Redis and shared by every
+agent, instead of living in each browser's localStorage. "Pinned" and
+"Recent" stay in localStorage per browser — they're personal shortcuts.
 
-**A single-file, bilingual support toolkit for Pathao customer support agents —**
-**reply presets, a delivery fee calculator, and hub coverage lookup, all in one place.**
+## Files added
+- `api/_redis.js` — shared Upstash Redis client
+- `api/presets.js` — GET / POST `{ presets: [...] }`
+- `api/hubs.js` — GET / POST `{ hubs: [...] }`
+- `api/admin.js` — POST `{ action: 'verify' | 'set', password }`
+- `package.json` — declares the `@upstash/redis` dependency
 
-[![Made with HTML](https://img.shields.io/badge/Made%20with-HTML%2FCSS%2FJS-E83330?style=for-the-badge&logo=html5&logoColor=white)](.)
-[![Deploy with Vercel](https://img.shields.io/badge/Deploy-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/new)
-[![Bilingual](https://img.shields.io/badge/Language-বাংলা%20%2F%20English-12777A?style=for-the-badge)](.)
-[![License](https://img.shields.io/badge/License-MIT-9C948A?style=for-the-badge)](LICENSE)
+## Deploy steps
+1. Drop these files into your existing repo, alongside `index.html`
+   (keep it at the repo root, or wherever Vercel currently serves it
+   from — no other changes needed to that file's location).
+2. Commit and push. Vercel auto-detects the `api/` folder as
+   serverless functions.
+3. In the Vercel dashboard, confirm the Upstash Redis integration is
+   connected to **this** project, so `KV_REST_API_URL` and
+   `KV_REST_API_TOKEN` show up under Project Settings → Environment
+   Variables. If they're not there yet, connect the integration from
+   the Marketplace tab and redeploy.
+4. Redeploy. On first load, the portal seeds Redis with the sample
+   hub list automatically (same sample data as before). Custom
+   presets start empty until agents add some.
 
-</div>
+## Troubleshooting "hub data not loading" / "preset not saving"
 
----
+1. After deploying, open `https://<your-app>.vercel.app/api/diagnostics`
+   directly in the browser. It reports (no secrets exposed):
+   - `envVarsDetected` — which URL/TOKEN env var pair it found, or `null`
+   - `otherRedisRelatedEnvVarsPresent` — any Redis/KV-ish env var names
+     it sees, useful if the names don't match what's expected
+   - `redisPingOk` — whether an actual write+read against Redis worked
+   - `error` — the exact failure message if something's wrong
 
-## ✨ What is this?
+2. Common causes:
+   - **Env vars not on this project/environment.** Vercel integrations
+     are connected per-project and per-environment (Production/Preview/
+     Development) — check they're enabled for the environment you're
+     testing (e.g. Production), not just Preview.
+   - **Different var names.** If you renamed the integration or it's a
+     different Redis provider, the names might not be `KV_REST_API_URL`
+     / `KV_REST_API_TOKEN`. The `otherRedisRelatedEnvVarsPresent` list
+     in `/api/diagnostics` will show what's actually there — `_redis.js`
+     already tries several known naming patterns automatically, but if
+     yours is different, tell me the exact names and I'll add them.
+   - **Not redeployed after connecting the integration.** Env vars only
+     apply to deployments made after they were added — trigger a new
+     deployment (redeploy, don't just "refresh").
 
-**Pathao CX Portal** is a lightweight, no-backend-required web app built for Pathao's
-customer support agents. It puts the three things an agent reaches for most —
-**canned replies, a fee calculator, and hub coverage info** — one click away, with
-zero page reloads and zero setup.
+3. You can also hit `/api/hubs` or `/api/presets` directly in the
+   browser — they now return the real error message in the JSON body
+   instead of a generic failure, and the app's toast messages and
+   browser console (F12 → Console) show the same detail.
 
-It runs entirely as a single HTML file: open it in a browser and it just works.
-No server, no build step, no dependencies to install.
-
----
-
-## 🧩 Features
-
-| | Feature | Details |
-|---|---|---|
-| 💬 | **Reply Preset Library** | Searchable, categorized canned responses for common support scenarios, in Bangla and English |
-| 📌 | **Pin & Recent Dock** | Pin your most-used replies and keep a running list of recently copied ones |
-| 🧮 | **Delivery Fee Calculator** | Instantly estimate courier charges across merchant types, zones, and weight |
-| 📍 | **Hub Coverage Checker** | Check whether pickup/delivery is available in a given area |
-| 🏢 | **Designated Hub Finder** | Find the exact hub responsible for a specific area |
-| ⌘K | **Command Palette** | `Ctrl/Cmd + K` to search and copy any preset instantly, keyboard-first |
-| 🌗 | **Light / Dark Mode** | Toggle instantly, saved across sessions |
-| 🌐 | **Bangla / English Toggle** | Every preset, label, and tool switches language on the fly |
-| 🔐 | **Admin-Gated Management** | Editing, deleting, importing, and exporting data requires an admin password — anyone can *add* a new preset or hub freely |
-| 💾 | **Backup / Restore** | Export your preset & hub data as JSON, import it back anytime |
-
----
-
-## 🔐 Admin Access
-
-Some actions are protected so the shared library doesn't get accidentally edited or wiped:
-
-| Action | Needs Admin? |
-|---|:---:|
-| Add a new preset | ❌ No |
-| Add a new hub | ❌ No |
-| Edit / delete a preset or hub | ✅ Yes |
-| Reset sample hub data | ✅ Yes |
-| Export / import backup JSON | ✅ Yes |
-
-- **Default password:** `1234`
-- Changeable anytime from the 🔒 admin icon in the top bar, once unlocked.
-
-> ⚠️ **Note:** In the current version, this check runs entirely in the browser (no backend), so treat it as a soft guardrail against accidental edits — not a real security boundary. See [Roadmap](#-roadmap) below for the plan to move this server-side.
-
----
-
-## 🚀 Getting Started
-
-### Option 1 — Just open it
-Download `Pathao_CX_Portal.html` and double-click it. That's it — it runs locally in any modern browser.
-
-### Option 2 — Host it for your team
-
-**1. Push to GitHub**
-```bash
-git init
-git add .
-git commit -m "Initial commit — Pathao CX Portal"
-git branch -M main
-git remote add origin https://github.com/<your-username>/<your-repo>.git
-git push -u origin main
-```
-
-**2. Deploy on Vercel**
-- Go to [vercel.com/new](https://vercel.com/new)
-- Import your GitHub repo
-- Leave all settings as default (it's a static site — zero configuration needed)
-- Click **Deploy**
-
-Your portal will be live at `https://<your-repo>.vercel.app` in under a minute.
-
----
-
-## 🗂️ Project Structure
-
-```
-📦 pathao-cx-portal
- ┗ 📄 Pathao_CX_Portal.html   ← the entire app: HTML + CSS + JS in one file
-```
-
----
-
-## ⚠️ Good to Know: How Data Storage Works
-
-This app currently stores all data (custom presets, hubs, pins, admin password) in the
-browser's **`localStorage`** — there's no database or backend.
-
-- ✅ Your data persists across reloads and browser restarts.
-- ❌ It is **not shared** between devices or between team members. Each person who opens
-  the portal builds up their own private copy.
-- 🔄 To sync data across a team today, use **Export JSON** on one device and
-  **Import JSON** on another.
-
-A shared, database-backed version (so the whole team edits one live library) is on the
-roadmap — see below.
-
----
-
-## 🛣️ Roadmap
-
-- [ ] Shared storage via **Vercel + Upstash Redis** (free tier) — one live library for the whole team instead of per-browser data
-- [ ] Move admin password verification server-side
-- [ ] Multi-admin accounts with individual logins
-- [ ] Usage analytics (most-copied presets, busiest hubs)
-
----
-
-## 🛠️ Tech Stack
-
-![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat-square&logo=html5&logoColor=white)
-![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
-![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat-square&logo=vercel&logoColor=white)
-
-No frameworks, no build tools, no npm install — just plain HTML/CSS/JS, on purpose,
-so it stays a single portable file.
-
----
-
-## 🤝 Contributing
-
-Found an outdated fee table, a missing hub, or a preset that needs updating? Feel free
-to open an issue or a pull request.
-
----
-
-## 📄 License
-
-This project is licensed under the [MIT License](LICENSE).
-
-<div align="center">
-
-Made for Pathao Customer Support agents 🩷
-
-</div>
+## Notes
+- The admin password defaults to `1234` (same as before) until
+  someone changes it from the Admin panel — that change now updates
+  Redis, so it applies to everyone immediately.
+- Everything is "last write wins" — fine for a small internal team
+  tool, but two admins editing the same preset at the exact same
+  moment could overwrite each other. Not an issue at normal usage.
+- If Redis is briefly unreachable, the built-in preset library still
+  works (it's hardcoded, not stored), and the UI shows a toast if a
+  save or a custom-data load fails.
