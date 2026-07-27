@@ -1457,6 +1457,23 @@ document.getElementById('catScroll').addEventListener('click', e=>{
 /* ============================================================
    RENDER — preset grid
    ============================================================ */
+function normalizeSearchText(value){
+  return String(value || '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^\p{L}\p{N}\s]/gu, '')
+    .replace(/\s+/g, ' ');
+}
+
+function matchesSearchText(text, query){
+  if(!query) return true;
+  const normalizedText = normalizeSearchText(text);
+  const normalizedQuery = normalizeSearchText(query);
+  return normalizedText.includes(normalizedQuery);
+}
+
 function getPool(){
   let pool = allPresets();
   if(activeCat !== 'all'){
@@ -1464,12 +1481,9 @@ function getPool(){
     pool = pool.filter(p=>p.cat===cat && p.sub===sub);
   }
   if(query){
-    const q = query.toLowerCase();
+    const q = query;
     pool = pool.filter(p=>
-      p.bn.toLowerCase().includes(q) ||
-      (p.en||'').toLowerCase().includes(q) ||
-      p.sub.toLowerCase().includes(q) ||
-      p.cat.toLowerCase().includes(q)
+      [getText(p), p.sub, p.cat].some(text => matchesSearchText(text, q))
     );
   }
   return pool;
@@ -1754,10 +1768,9 @@ function openPalette(){
 function closePalette(){ document.getElementById('paletteOverlay').classList.remove('open'); }
 function renderPaletteList(q){
   const all = allPresets();
-  const ql = q.toLowerCase();
+  const ql = q;
   paletteItems = !ql ? all.slice(0,40) : all.filter(p=>
-    getText(p).toLowerCase().includes(ql) || p.sub.toLowerCase().includes(ql) ||
-    p.cat.toLowerCase().includes(ql) || (p.en||'').toLowerCase().includes(ql)
+    [getText(p), p.sub, p.cat, p.en || '', p.bn].some(text => matchesSearchText(text, ql))
   ).slice(0,40);
   paletteActiveIndex = 0;
   const list = document.getElementById('paletteList');
