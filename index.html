@@ -2234,7 +2234,7 @@ function overlayClick(e, id){
   if(panelIds.includes(id)){ closePanel(id); return; }
   ({modalOverlay:closeModal, confirmOverlay:closeConfirm, fillOverlay:closeFill, ioOverlay:closeIO,
     paletteOverlay:closePalette, hubFormOverlay:closeHubForm,
-    adminLoginOverlay:closeAdminLogin, adminPanelOverlay:closeAdminPanel}[id])?.();
+    adminLoginOverlay:closeAdminLogin, adminPanelOverlay:closeAdminPanel, assistantOverlay:closeAssistant}[id])?.();
 }
 function toggleDark(){
   const isDark = document.documentElement.classList.toggle('dark');
