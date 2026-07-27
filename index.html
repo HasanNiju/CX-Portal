@@ -1805,6 +1805,46 @@ function openPalette(){
   setTimeout(()=>input.focus(), 50);
 }
 function closePalette(){ document.getElementById('paletteOverlay').classList.remove('open'); }
+function openAssistant(){
+  document.getElementById('assistantOverlay').classList.add('open');
+  document.getElementById('assistantResults').innerHTML = '';
+  document.getElementById('assistantStatus').style.display = 'none';
+  const input = document.getElementById('assistantInput');
+  input.value = '';
+  setTimeout(()=>input.focus(), 50);
+}
+function closeAssistant(){ document.getElementById('assistantOverlay').classList.remove('open'); }
+
+async function askAssistant(){
+  const q = document.getElementById('assistantInput').value.trim();
+  const statusEl = document.getElementById('assistantStatus');
+  const resultsEl = document.getElementById('assistantResults');
+  const btn = document.getElementById('assistantAskBtn');
+  if(!q){ return; }
+
+  btn.disabled = true;
+  resultsEl.innerHTML = '';
+  statusEl.style.display = 'block';
+  statusEl.textContent = activeLang==='bn' ? 'খোঁজা হচ্ছে...' : 'Thinking...';
+
+  try{
+    const data = await apiPost('/api/assistant', { query: q, presets: allPresets() });
+    const ids = Array.isArray(data.ids) ? data.ids : [];
+    const matches = ids.map(id => findPreset(id)).filter(Boolean);
+
+    if(!matches.length){
+      statusEl.textContent = activeLang==='bn' ? 'কোনো মিল পাওয়া যায়নি' : 'No matches found';
+    } else {
+      statusEl.style.display = 'none';
+      resultsEl.innerHTML = matches.map(p=>cardHtml(p)).join('');
+    }
+  }catch(err){
+    console.error('Assistant failed:', err);
+    statusEl.textContent = (activeLang==='bn' ? 'ব্যর্থ হয়েছে: ' : 'Failed: ') + err.message;
+  }finally{
+    btn.disabled = false;
+  }
+}
 function renderPaletteList(q){
   const all = allPresets();
   const ql = q;
