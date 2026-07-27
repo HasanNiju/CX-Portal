@@ -1113,7 +1113,11 @@ html.dark .hub-area-tag.hit{ color:#ff8a87; }
 
 <div class="overlay" id="assistantOverlay" onclick="overlayClick(event,'assistantOverlay')" style="align-items:flex-start; padding-top:9vh;">
   <div class="popup cmdk-popup" onclick="event.stopPropagation()">
-    <div class="assistant-box">
+  <div class="popup-head">
+    <div class="popup-head-text"><h3>AI প্রিসেট অ্যাসিস্ট্যান্ট</h3></div>
+    <button class="icon-btn" onclick="closeAssistant()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+  </div>
+  <div class="assistant-box">
       <textarea id="assistantInput" placeholder="কাস্টমারের মেসেজ/কোয়েরি পেস্ট করুন..."></textarea>
       <button class="btn-primary" id="assistantAskBtn" onclick="askAssistant()" style="margin-top:10px; width:100%;">সাজেশন দেখুন</button>
     </div>
@@ -2299,7 +2303,7 @@ document.addEventListener('keydown', e=>{
   const tag = (e.target.tagName||'').toLowerCase();
   if((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==='k'){ e.preventDefault(); openPalette(); return; }
   if(e.key==='Escape'){
-    closeModal(); closeConfirm(); closeFill(); closeIO(); closePalette(); closeHubForm(); closeAdminLogin(); closeAdminPanel();
+    closeModal(); closeConfirm(); closeFill(); closeIO(); closePalette(); closeHubForm(); closeAdminLogin(); closeAdminPanel(); closeAssistant();
     ['calcOverlay','coverageOverlay','finderOverlay','hubMgrOverlay'].forEach(id=>{
       const el = document.getElementById(id);
       if(el.classList.contains('open')) closePanel(id);
