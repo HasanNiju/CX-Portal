@@ -1095,6 +1095,21 @@ html.dark .hub-area-tag.hit{ color:#ff8a87; }
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
 </button>
 
+<div class="overlay" id="assistantOverlay" onclick="overlayClick(event,'assistantOverlay')" style="align-items:flex-start; padding-top:9vh;">
+  <div class="popup cmdk-popup" onclick="event.stopPropagation()">
+    <div class="assistant-box">
+      <textarea id="assistantInput" placeholder="কাস্টমারের মেসেজ/কোয়েরি পেস্ট করুন..."></textarea>
+      <button class="btn-primary" id="assistantAskBtn" onclick="askAssistant()" style="margin-top:10px; width:100%;">সাজেশন দেখুন</button>
+    </div>
+    <div class="assistant-status" id="assistantStatus" style="display:none;"></div>
+    <div class="cmdk-list" id="assistantResults"></div>
+  </div>
+</div>
+
+<button class="assistant-fab" onclick="openAssistant()" title="AI Preset Assistant">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a5 5 0 015 5v2a5 5 0 01-10 0V7a5 5 0 015-5z"/><path d="M8 21h8M12 17v4"/></svg>
+</button>
+
 <div id="toast"></div>
 
 <script>
