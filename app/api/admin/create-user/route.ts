@@ -45,12 +45,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: createErr?.message || "Couldn't create the account." }, { status: 400 });
   }
 
-  const { error: profileErr } = await admin.from("profiles").insert({
+  const { error: profileErr } = await admin.from("profiles").upsert({
     id: created.user.id,
     full_name: fullName,
     email,
     role,
-    status: "pending",
+    status: "",
   });
   if (profileErr) {
     await admin.auth.admin.deleteUser(created.user.id);
