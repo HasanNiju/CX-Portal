@@ -1,17 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-// Server-side only — the Gemini API key never reaches the browser.
-// Any authenticated agent/admin/super_admin can use the assistant.
-// Gemini's free tier (Flash models) is enough for an internal tool
-// like this — no billing required to get started.
-
 const MODEL = "gemini-2.5-flash";
 
 async function findRelevantPresets(supabase: ReturnType<typeof createClient>, question: string) {
-  // Cheap keyword match against title/short_description/content/tags —
-  // good enough to ground the assistant in real preset wording without
-  // needing a vector index. Pulls the few best matches, not everything.
   const words = question
     .toLowerCase()
     .replace(/[^\p{L}\p{N}\s]/gu, " ")
