@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --perf-color: #DCDFD9;
+}
+.dark-scope {
+  --perf-color: #2B3140;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: #EEF0EC;
+  color: #171B21;
+}
+
+::selection {
+  background: #E83330;
+  color: white;
+}
+
+/* Perforated ticket edge — signature element */
+.ticket-perf {
+  position: relative;
+}
+.ticket-perf::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 6px;
+  background-image: radial-gradient(circle, var(--perf-color) 2.4px, transparent 2.6px);
+  background-size: 14px 14px;
+  background-position: 4px -4px;
+  background-repeat: repeat-x;
+}
+
+.focus-ring {
+  outline: none;
+}
+.focus-ring:focus-visible {
+  outline: 2px solid #E83330;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Scrollbar */
+.scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: #DCDFD9; border-radius: 8px; }
+.dark-scope .scrollbar-thin::-webkit-scrollbar-thumb { background: #2B3140; }
