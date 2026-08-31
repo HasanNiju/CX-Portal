@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
-import { Ticket } from "@/components/ui/Ticket";
+import { getSessionProfile } from "@/lib/supabase/session";
+import { HomeFeature } from "@/components/home/HomeFeature";
 
 function greeting() {
   const h = new Date().getHours();
@@ -10,9 +10,7 @@ function greeting() {
 }
 
 export default async function HomePage() {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user!.id).single();
+  const { user, profile, supabase } = await getSessionProfile();
   const { count: presetCount } = await supabase
     .from("presets")
     .select("*", { count: "exact", head: true })
@@ -32,45 +30,28 @@ export default async function HomePage() {
         Here's your workspace — jump into presets, run a quick calculation, or ask the assistant.
       </p>
 
-      <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Link href="/presets" className="group">
-          <Ticket code={`${presetCount ?? "—"} LIVE`} className="h-full transition-transform group-hover:-translate-y-0.5">
-            <h2 className="font-display text-xl font-semibold text-ink">Preset Bank</h2>
-            <p className="mt-2 text-sm text-ink-soft leading-relaxed">
-              Browse and copy support responses by category, tag, or language.
-            </p>
-            <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-brand">
-              Open library
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-            </span>
-          </Ticket>
-        </Link>
-
-        <Link href="/calculator" className="group">
-          <Ticket code="ISD · OSD · SUB" className="h-full transition-transform group-hover:-translate-y-0.5">
-            <h2 className="font-display text-xl font-semibold text-ink">Calculator</h2>
-            <p className="mt-2 text-sm text-ink-soft leading-relaxed">
-              Estimate delivery charges by zone, weight, merchant type, and COD.
-            </p>
-            <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-brand">
-              Run a calculation
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-            </span>
-          </Ticket>
-        </Link>
-
-        <Link href="/assistant" className="group">
-          <Ticket code="AI" className="h-full transition-transform group-hover:-translate-y-0.5">
-            <h2 className="font-display text-xl font-semibold text-ink">AI Assistant</h2>
-            <p className="mt-2 text-sm text-ink-soft leading-relaxed">
-              Ask for the right preset, rewrite a reply, or explain a calculator result.
-            </p>
-            <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-brand">
-              Start a conversation
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-            </span>
-          </Ticket>
-        </Link>
+      <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <HomeFeature
+          href="/presets"
+          icon="library"
+          title="Preset Bank"
+          description="Search and copy support responses by category, tag, or language."
+          meta={`${presetCount ?? "—"} live`}
+        />
+        <HomeFeature
+          href="/calculator"
+          icon="calculator"
+          title="Calculator"
+          description="Estimate delivery charges by zone, weight, merchant type, and COD."
+          meta="ISD · OSD · Suburb"
+        />
+        <HomeFeature
+          href="/assistant"
+          icon="sparkles"
+          title="AI Assistant"
+          description="Ask for the right preset, rewrite a reply, or explain a calculator result."
+          meta="Powered by Gemini"
+        />
       </div>
     </div>
   );

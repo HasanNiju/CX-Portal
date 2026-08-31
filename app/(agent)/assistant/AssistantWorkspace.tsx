@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 
-type Msg = { role: "user" | "assistant"; content: string };
+type Msg = { role: "user" | "assistant"; content: string; usedPresets?: string[] };
 
 const STARTERS = [
   "Help me respond to this customer.",
@@ -57,7 +57,7 @@ export function AssistantWorkspace({ presetId }: { presetId?: string }) {
       if (!res.ok) {
         setError(data.error || "Something went wrong.");
       } else {
-        setMessages((m) => [...m, { role: "assistant", content: data.reply }]);
+        setMessages((m) => [...m, { role: "assistant", content: data.reply, usedPresets: data.usedPresets }]);
       }
     } catch {
       setError("Network error — check your connection and try again.");
@@ -110,6 +110,15 @@ export function AssistantWorkspace({ presetId }: { presetId?: string }) {
               }`}
             >
               {m.content}
+              {m.role === "assistant" && !!m.usedPresets?.length && (
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                  {m.usedPresets.map((t) => (
+                    <span key={t} className="rounded-full border border-line bg-surface px-2 py-0.5 text-[11px] font-medium text-ink-soft">
+                      From: {t}
+                    </span>
+                  ))}
+                </div>
+              )}
               {m.role === "assistant" && (
                 <button
                   onClick={() => copy(m.content)}

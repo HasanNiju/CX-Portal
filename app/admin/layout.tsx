@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionProfile } from "@/lib/supabase/session";
 import { TopBar } from "@/components/shell/TopBar";
 import type { Profile } from "@/lib/supabase/types";
 
@@ -12,11 +12,8 @@ const NAV = [
 const SUPER_NAV = [{ href: "/admin/super", label: "Super Admin" }];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { user, profile } = await getSessionProfile();
   if (!user) redirect("/login");
-
-  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
   if (!profile || profile.role === "agent") redirect("/home");
 
   const nav = profile.role === "super_admin" ? [...NAV, ...SUPER_NAV] : NAV;

@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+import { getSessionProfile } from "@/lib/supabase/session";
 import { PresetLibrary } from "./PresetLibrary";
 
 export default async function PresetsPage() {
-  const supabase = createClient();
+  const { supabase } = await getSessionProfile();
   const [{ data: presets }, { data: categories }] = await Promise.all([
     supabase.from("presets").select("*").eq("is_active", true).order("sort_order"),
     supabase.from("preset_categories").select("*").eq("is_active", true).order("sort_order"),

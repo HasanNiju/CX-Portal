@@ -41,7 +41,7 @@ Copy `.env.example` to `.env.local` and fill in:
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=      # server only — never expose to the browser
-ANTHROPIC_API_KEY=              # powers the AI Assistant
+GEMINI_API_KEY=                 # powers the AI Assistant — free tier at aistudio.google.com/apikey
 ```
 
 ## 3. Create your first Super Admin
@@ -118,6 +118,35 @@ worth confirming and adjusting:
 - **Invite flow:** new accounts get a Supabase-generated magic invite link
   (logged server-side) rather than an email being sent automatically — wire
   up Supabase's SMTP settings (or a transactional email provider) to send it.
-- **AI Assistant model/provider:** wired to Anthropic's API via
-  `ANTHROPIC_API_KEY`. Swap the route in `app/api/assistant/route.ts` if you'd
-  rather use a different provider.
+- **AI Assistant model/provider:** wired to Google's Gemini API (`gemini-2.5-flash`)
+  via `GEMINI_API_KEY` — chosen because it has a genuine free tier with no
+  card required. It automatically keyword-searches your active presets for
+  each question and feeds the best matches to the model as context, so
+  answers lean on your team's actual approved wording instead of generic
+  phrasing. Swap the route in `app/api/assistant/route.ts` if you'd rather
+  use a different provider, or replace the keyword search with a proper
+  vector-embedding search (pgvector) once your preset bank grows large
+  enough that keyword matching starts missing things.
+
+## Performance notes
+
+A few things worth knowing if the app feels slow:
+
+- **Fixed:** several pages were independently re-fetching the logged-in
+  user + their profile (the layout, the page, sometimes both) — 2-3
+  redundant round-trips to Supabase per single page load. `lib/supabase/session.ts`
+  now dedupes this per-request with React's `cache()`.
+- **Middleware runs on every request** and calls `supabase.auth.getUser()`
+  to verify the session server-side — this is a deliberate security choice
+  (it revalidates the token instead of trusting a cookie blindly) but it
+  does add one network round-trip before any page starts rendering. That's
+  the cost of real server-side auth checking rather than hiding pages with
+  client-side JS.
+- **Check your Supabase project's region matches your Vercel deployment
+  region.** If Supabase is in, say, `us-east-1` and Vercel is deploying to
+  a different region, every database call crosses a longer network path.
+  This is a very common cause of "everything feels sluggish" with this
+  stack and costs nothing to fix — it's a setting in each dashboard.
+- **Vercel's Hobby tier** has real cold starts on serverless functions
+  after inactivity — the first request after idle time will always be
+  slower than subsequent ones. This isn't something the app code controls.

@@ -1,13 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionProfile } from "@/lib/supabase/session";
 import { Badge } from "@/components/ui/Badge";
 import { PresetActions } from "./PresetActions";
 
 export default async function PresetDetailPage({ params }: { params: { id: string } }) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user!.id).single();
+  const { profile, supabase } = await getSessionProfile();
 
   const { data: preset } = await supabase.from("presets").select("*").eq("id", params.id).single();
   if (!preset) notFound();
