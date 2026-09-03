@@ -4,6 +4,19 @@ import { createClient } from "@/lib/supabase/server";
 const MODEL = "gemini-3.6-flash";
 
 async function findRelevantPresets(supabase: ReturnType<typeof createClient>, question: string) {
+  // Ranked full-text search (Postgres tsvector/websearch_to_tsquery) —
+  // finds presets by meaning-adjacent keyword overlap and ranks by
+  // relevance, instead of the old crude ILIKE-per-word matching.
+  const { data, error } = await supabase.rpc("search_presets", {
+    search_query: question,
+    match_count: 6,
+  });
+
+  if (!error && data && data.length > 0) return data;
+
+  // Fallback for edge cases where websearch_to_tsquery finds nothing
+  // (e.g. a query that's only stopwords/punctuation after parsing) —
+  // crude keyword ILIKE still catches something rather than nothing.
   const words = question
     .toLowerCase()
     .replace(/[^\p{L}\p{N}\s]/gu, " ")
@@ -13,14 +26,14 @@ async function findRelevantPresets(supabase: ReturnType<typeof createClient>, qu
 
   if (words.length === 0) return [];
 
-  const { data } = await supabase
+  const { data: fallback } = await supabase
     .from("presets")
     .select("title, short_description, content, tags")
     .eq("is_active", true)
     .or(words.map((w) => `title.ilike.%${w}%,short_description.ilike.%${w}%,content.ilike.%${w}%`).join(","))
-    .limit(4);
+    .limit(6);
 
-  return data || [];
+  return fallback || [];
 }
 
 export async function POST(req: NextRequest) {
@@ -52,11 +65,16 @@ export async function POST(req: NextRequest) {
 
   const systemPrompt = [
     "You are the CX Portal Assistant for Pathao customer-support agents.",
-    "Help agents find the right preset response, rewrite replies to be clear and professional, explain calculator results, and answer general support questions.",
-    "Keep replies concise and ready to paste into a live chat unless asked for more detail.",
-    "When one of the presets below fits the situation, prefer it (adapted to the agent's specifics) over writing something from scratch — it reflects the team's approved tone.",
-    presetBlock ? `Presets that may be relevant to this question:\n\n${presetBlock}` : "",
-    presetContext ? `Preset content the agent is directly referencing:\n${presetContext}` : "",
+    "Your job is to ground replies in the company's approved preset responses below, not to write generic answers from general knowledge.",
+    "",
+    "Rules for using presets:",
+    "1. If one or more presets below are a good match for the situation, base your reply directly on the best-matching preset's wording and structure. Lightly adapt it — fill in specifics the agent mentioned (names, order numbers, exact issue), adjust tone slightly if needed — but keep it recognizably the same approved response, not a rewrite from scratch.",
+    "2. If multiple presets are relevant (e.g. an apology plus a hold message), you may combine them naturally into one coherent reply.",
+    "3. If none of the presets genuinely fit the situation, say so briefly and then write a professional reply in the same tone the presets use — do not force-fit an unrelated preset.",
+    "4. Keep the reply ready to paste directly into a live chat unless the agent explicitly asks for an explanation or something longer.",
+    "5. Preserve the preset's original language (Bangla presets stay in Bangla, English presets stay in English) unless the agent asks for a translation.",
+    presetBlock ? `Presets that may be relevant to this question, ranked by relevance:\n\n${presetBlock}` : "No presets matched this question closely — answer using general professional support judgment instead.",
+    presetContext ? `The agent is directly referencing this preset — treat it as the primary basis for your reply:\n${presetContext}` : "",
   ].filter(Boolean).join("\n\n");
 
   try {

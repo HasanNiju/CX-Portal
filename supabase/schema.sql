@@ -227,3 +227,29 @@ insert into calculator_configs (name, is_active, version, config_json) values (
 -- Every account after that is created through the app by an
 -- existing Admin/Super Admin via the invite flow.
 -- ============================================================
+
+-- ============================================================
+-- Assistant preset search — proper ranked full-text search
+-- (replaces crude ILIKE keyword matching). Runs as the calling
+-- user (no "security definer"), so the existing RLS policy on
+-- presets ("read active presets") still governs what it can see.
+-- ============================================================
+create or replace function search_presets(search_query text, match_count int default 6)
+returns table (title text, short_description text, content text, tags text[], rank real)
+language sql
+stable
+as $$
+  select p.title, p.short_description, p.content, p.tags,
+         ts_rank(
+           to_tsvector('simple', coalesce(p.title,'') || ' ' || coalesce(p.short_description,'') || ' ' || coalesce(p.content,'')),
+           websearch_to_tsquery('simple', search_query)
+         ) as rank
+  from presets p
+  where p.is_active
+    and to_tsvector('simple', coalesce(p.title,'') || ' ' || coalesce(p.short_description,'') || ' ' || coalesce(p.content,''))
+        @@ websearch_to_tsquery('simple', search_query)
+  order by rank desc
+  limit match_count;
+$$;
+
+grant execute on function search_presets(text, int) to authenticated;
